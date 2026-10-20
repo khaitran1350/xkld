@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { KanaItem, UserStats } from '../types/kana';
 import { BASIC_KANA, DAKUON_KANA, ROW_CATEGORIES, checkRomajiMatch } from '../data/kanaData';
+import { getStrokeGuide } from '../data/strokeGuides';
 import type { AppSettings } from '../utils/storage';
 import { soundFx } from '../utils/audio';
 
@@ -36,11 +37,15 @@ export const PracticeDojo: React.FC<PracticeDojoProps> = ({
   const [feedbackState, setFeedbackState] = useState<FeedbackState>('idle');
   const [showHint, setShowHint] = useState(false);
   const [showRowSelector, setShowRowSelector] = useState(false);
+  const [showStrokeSteps, setShowStrokeSteps] = useState(false);
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [sessionCount, setSessionCount] = useState(0);
   const [sessionCorrect, setSessionCorrect] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const autoAdvanceTimeout = useRef<number | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isDrawing = useRef(false);
 
   // Compute active pool when settings change
   useEffect(() => {
@@ -98,11 +103,68 @@ export const PracticeDojo: React.FC<PracticeDojoProps> = ({
     setFeedbackState('idle');
     setShowHint(false);
 
+    // Clear canvas drawing if any
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
     // Focus input field
     setTimeout(() => {
       inputRef.current?.focus();
     }, 50);
   }, [activePool, currentKana, reviewQueue, settings.kanaMode]);
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const startDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    isDrawing.current = true;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#c84b31';
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawing.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = (e?: React.PointerEvent<HTMLCanvasElement>) => {
+    isDrawing.current = false;
+    if (e) {
+      try {
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   // Initial load
   useEffect(() => {
@@ -263,6 +325,7 @@ export const PracticeDojo: React.FC<PracticeDojoProps> = ({
     : '';
 
   const accuracyPct = sessionCount > 0 ? Math.round((sessionCorrect / sessionCount) * 100) : 100;
+  const strokeInfo = currentKana ? getStrokeGuide(currentKana.id) : undefined;
 
   return (
     <div className="practice-container">
@@ -354,38 +417,136 @@ export const PracticeDojo: React.FC<PracticeDojoProps> = ({
       <div className={`zen-card ${feedbackState}`}>
         {/* Card Header metadata */}
         <div className="card-top-meta">
-          <span className="script-badge">
-            {currentScript === 'hiragana' ? 'ひらがな Hiragana' : 'カタカナ Katakana'}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span className="script-badge">
+              {currentScript === 'hiragana' ? 'ひらがな Hiragana' : 'カタカナ Katakana'}
+            </span>
+            {currentKana && (
+              <span className="stroke-badge-tag" title="Total stroke count to write this character">
+                {currentKana.strokeCount}画 ({currentKana.strokeCount} strokes)
+              </span>
+            )}
+          </div>
 
-          <span className="row-badge">
-            {currentKana?.rowName || ''}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Font Style Toggle: Modern vs Textbook Pen */}
+            <div className="font-toggle-pill" title="Font: Modern (Zen Maru / Noto Sans) vs Textbook Pen (Klee One)">
+              <button
+                type="button"
+                className={`font-option-btn ${settings.fontStyle === 'modern' ? 'active' : ''}`}
+                onClick={() => updateSettings({ fontStyle: 'modern' })}
+              >
+                Modern
+              </button>
+              <button
+                type="button"
+                className={`font-option-btn ${settings.fontStyle === 'handwriting' ? 'active' : ''}`}
+                onClick={() => updateSettings({ fontStyle: 'handwriting' })}
+              >
+                Textbook
+              </button>
+            </div>
 
-          <button
-            type="button"
-            className="card-audio-btn"
-            onClick={handleSpeak}
-            title="Listen to native Japanese pronunciation"
-            aria-label="Play pronunciation audio"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-            </svg>
-            <span className="listen-text">Listen</span>
-          </button>
+            <button
+              type="button"
+              className="card-audio-btn"
+              onClick={handleSpeak}
+              title="Listen to native Japanese pronunciation"
+              aria-label="Play pronunciation audio"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+              </svg>
+              <span className="listen-text">Listen</span>
+            </button>
+          </div>
         </div>
 
-        {/* Large Kana Display with Zen Ensō Ink Stamp */}
-        <div className="character-stage" onClick={handleSpeak} title="Click to listen">
-          <div className="enso-circle" />
-          <div className="kana-symbol">{displayChar}</div>
+        {/* Large Kana Display with Japanese 4-Quadrant Writing Practice Grid */}
+        <div
+          className="character-stage"
+          onClick={!isDrawingMode ? handleSpeak : undefined}
+          title={isDrawingMode ? 'Draw strokes with mouse or touch' : 'Click to listen'}
+        >
+          {/* Authentic 4-quadrant dashed crosshair grid */}
+          <div className="practice-grid-box" />
+
+          {/* Character symbol */}
+          <div className="kana-symbol" style={{ opacity: isDrawingMode ? 0.35 : 1 }}>
+            {displayChar}
+          </div>
+
           <div className="counterpart-kana" title={`Equivalent in ${currentScript === 'hiragana' ? 'Katakana' : 'Hiragana'}`}>
             {otherScriptChar}
           </div>
+
+          {/* Interactive Draw & Trace Canvas */}
+          {isDrawingMode && (
+            <canvas
+              ref={canvasRef}
+              className="draw-canvas"
+              width={200}
+              height={200}
+              onPointerDown={startDrawing}
+              onPointerMove={draw}
+              onPointerUp={stopDrawing}
+              onPointerLeave={stopDrawing}
+            />
+          )}
         </div>
+
+        {/* Writing Practice and Stroke Order Controls */}
+        <div className="canvas-controls-bar">
+          <button
+            type="button"
+            className={`canvas-btn ${isDrawingMode ? 'active' : ''}`}
+            onClick={() => setIsDrawingMode(!isDrawingMode)}
+            title="Practice writing on the character with mouse or touch"
+          >
+            ✍️ {isDrawingMode ? 'Drawing Active' : 'Practice Writing'}
+          </button>
+
+          {isDrawingMode && (
+            <button
+              type="button"
+              className="canvas-btn"
+              onClick={clearCanvas}
+              title="Clear pen drawing"
+            >
+              Clear Pen
+            </button>
+          )}
+
+          <button
+            type="button"
+            className={`canvas-btn ${showStrokeSteps ? 'active' : ''}`}
+            onClick={() => setShowStrokeSteps(!showStrokeSteps)}
+            title="Show stroke-by-stroke writing instructions"
+          >
+            📋 Stroke Steps ({currentKana?.strokeCount}画)
+          </button>
+        </div>
+
+        {/* Stroke Order Step-by-Step Instructions */}
+        {showStrokeSteps && strokeInfo && (
+          <div className="stroke-steps-card">
+            <div className="stroke-steps-title">
+              <span>✍️</span> How to Write 【{displayChar}】 ({strokeInfo.strokeCount} strokes)
+            </div>
+            <ul className="stroke-steps-list">
+              {strokeInfo.steps.map((st, i) => (
+                <li key={i} className="stroke-step-item">{st}</li>
+              ))}
+            </ul>
+            {strokeInfo.tips && (
+              <p className="stroke-tips-note">
+                💡 <strong>Writing Tip:</strong> {strokeInfo.tips}
+              </p>
+            )}
+          </div>
+        )}
 
 
         {/* Typing Input Form */}

@@ -34,6 +34,7 @@ export interface KanaItem {
   mnemonic: string; // Memory aid explanation
   exampleWord: ExampleWord;
   strokeCount: number;
+  strokeGuide?: string[];
   isDakuon?: boolean;
 }
 

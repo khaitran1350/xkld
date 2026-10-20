@@ -21,11 +21,12 @@ export function App() {
   const [activeTab, setActiveTab] = useState<'practice' | 'chart' | 'stats'>('practice');
   const [detailKana, setDetailKana] = useState<KanaItem | null>(null);
 
-  // Sync theme with HTML document attribute
+  // Sync theme and font with HTML document attribute
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.theme);
+    document.documentElement.setAttribute('data-font', settings.fontStyle);
     soundFx.setSoundEnabled(settings.soundEffects);
-  }, [settings.theme, settings.soundEffects]);
+  }, [settings.theme, settings.fontStyle, settings.soundEffects]);
 
   // Update settings and persist
   const handleUpdateSettings = (newSettings: Partial<AppSettings>) => {

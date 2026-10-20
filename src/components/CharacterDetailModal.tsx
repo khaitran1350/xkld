@@ -1,5 +1,6 @@
 import React from 'react';
 import type { KanaItem, UserStats } from '../types/kana';
+import { getStrokeGuide } from '../data/strokeGuides';
 import { soundFx } from '../utils/audio';
 
 interface CharacterDetailModalProps {
@@ -21,6 +22,7 @@ export const CharacterDetailModal: React.FC<CharacterDetailModalProps> = ({
   const attempts = charStat?.attempts || 0;
   const correct = charStat?.correct || 0;
   const accuracy = attempts > 0 ? Math.round((correct / attempts) * 100) : 0;
+  const strokeGuide = getStrokeGuide(item.id);
 
   const playPronunciation = (char: string) => {
     soundFx.speakJapanese(char);
@@ -47,7 +49,7 @@ export const CharacterDetailModal: React.FC<CharacterDetailModalProps> = ({
 
           <div className="modal-title-info">
             <h2 className="modal-romaji">【{item.romaji}】</h2>
-            <p className="modal-row-tag">{item.rowName}</p>
+            <p className="modal-row-tag">{item.rowName} • {item.strokeCount}画 ({item.strokeCount} strokes)</p>
             {item.alternatives && item.alternatives.length > 0 && (
               <p className="modal-alt-romaji">
                 Also accepted: <code>{item.alternatives.join(', ')}</code>
@@ -70,6 +72,25 @@ export const CharacterDetailModal: React.FC<CharacterDetailModalProps> = ({
         </div>
 
         <div className="modal-body">
+          {/* Stroke Order Guide */}
+          {strokeGuide && (
+            <div className="info-section">
+              <h3 className="section-title">
+                <span className="section-icon">✍️</span> How to Write ({item.strokeCount} strokes)
+              </h3>
+              <ul className="stroke-steps-list">
+                {strokeGuide.steps.map((step, i) => (
+                  <li key={i} className="stroke-step-item">{step}</li>
+                ))}
+              </ul>
+              {strokeGuide.tips && (
+                <p className="stroke-tips-note">
+                  💡 <strong>Writing Tip:</strong> {strokeGuide.tips}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Mnemonic Section */}
           <div className="info-section">
             <h3 className="section-title">

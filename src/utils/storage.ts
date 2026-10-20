@@ -5,6 +5,7 @@ const SETTINGS_KEY = 'kana_dojo_settings_v1';
 
 export interface AppSettings {
   kanaMode: 'hiragana' | 'katakana' | 'mixed';
+  fontStyle: 'modern' | 'handwriting';
   includeDakuon: boolean;
   selectedGroups: string[];
   theme: 'zen-light' | 'zen-dark';
@@ -22,6 +23,7 @@ export const DEFAULT_STATS: UserStats = {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   kanaMode: 'hiragana',
+  fontStyle: 'modern',
   includeDakuon: false,
   selectedGroups: ['vowels', 'k', 's', 't', 'n', 'h', 'm', 'y', 'r', 'w'], // All basic Gojuon rows by default
   theme: 'zen-light',

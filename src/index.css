@@ -3,9 +3,10 @@
    ========================================================================== */
 
 :root {
-  /* Typography */
+  /* Typography - Modern & Clear Textbook Writing */
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-kana: 'Shippori Mincho', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  --font-kana: 'Zen Maru Gothic', 'Noto Sans JP', sans-serif;
+  --font-kana-handwriting: 'Klee One', 'Zen Maru Gothic', sans-serif;
   --font-display: 'Zen Maru Gothic', 'Plus Jakarta Sans', sans-serif;
 
   /* Zen Light Palette (Washi Paper & Sumi Ink) */
@@ -616,7 +617,7 @@ button {
   border-color: var(--accent-vermilion);
 }
 
-/* Character Stage & Ensō Stamp */
+/* Character Stage & Japanese Writing Practice Grid (田 Kanji Grid) */
 .character-stage {
   position: relative;
   width: 220px;
@@ -629,37 +630,58 @@ button {
   user-select: none;
 }
 
-/* Ensō Zen Circle background */
-.enso-circle {
+/* Authentic Japanese 4-Quadrant Writing Practice Box (Genkō Yōshi Grid) */
+.practice-grid-box {
   position: absolute;
-  width: 190px;
-  height: 190px;
-  border-radius: 50%;
-  border: 5px solid var(--border-subtle);
-  border-top-color: var(--accent-vermilion);
-  border-right-color: transparent;
-  opacity: 0.35;
-  transform: rotate(-35deg);
-  transition: all 0.4s var(--ease-zen);
+  width: 200px;
+  height: 200px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border-subtle);
+  background: var(--bg-surface);
+  transition: all 0.3s var(--ease-zen);
+  overflow: hidden;
 }
 
-.character-stage:hover .enso-circle {
-  transform: rotate(5deg) scale(1.05);
-  opacity: 0.6;
-  border-top-color: var(--accent-vermilion);
-}
-
-.zen-card.correct .enso-circle {
-  border-top-color: var(--accent-matcha);
-  border-bottom-color: var(--accent-matcha);
+/* Vertical and horizontal dashed crosshairs dividing into 4 equal quadrants */
+.practice-grid-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  border-left: 1.5px dashed var(--border-subtle);
+  transform: translateX(-50%);
   opacity: 0.8;
-  transform: rotate(180deg) scale(1.08);
 }
 
+.practice-grid-box::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  border-top: 1.5px dashed var(--border-subtle);
+  transform: translateY(-50%);
+  opacity: 0.8;
+}
+
+.character-stage:hover .practice-grid-box {
+  border-color: var(--accent-vermilion);
+  box-shadow: 0 4px 16px var(--accent-vermilion-glow);
+}
+
+.zen-card.correct .practice-grid-box {
+  border-color: var(--accent-matcha);
+  background: var(--accent-matcha-soft);
+}
+
+/* Clean, modern, high-legibility Kana character symbol */
 .kana-symbol {
   font-family: var(--font-kana);
   font-size: 110px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text-primary);
   line-height: 1;
   z-index: 1;
@@ -667,17 +689,147 @@ button {
 }
 
 .character-stage:hover .kana-symbol {
-  transform: scale(1.05);
+  transform: scale(1.03);
 }
 
 .counterpart-kana {
   position: absolute;
   bottom: 8px;
-  right: 18px;
+  right: 14px;
   font-family: var(--font-kana);
-  font-size: 26px;
+  font-size: 24px;
   color: var(--text-muted);
-  opacity: 0.6;
+  opacity: 0.65;
+  z-index: 2;
+}
+
+/* Stroke Count Badge in Practice Stage */
+.stroke-badge-tag {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  z-index: 2;
+}
+
+/* Interactive Writing / Tracing Canvas */
+.draw-canvas {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 200px;
+  height: 200px;
+  border-radius: var(--radius-md);
+  z-index: 5;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.canvas-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.canvas-btn {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.canvas-btn:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.canvas-btn.active {
+  background: var(--accent-vermilion);
+  color: #FFFFFF;
+  border-color: var(--accent-vermilion);
+}
+
+/* Step-by-step Stroke Order Drawer */
+.stroke-steps-card {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  animation: slideDown 0.25s var(--ease-zen);
+}
+
+.stroke-steps-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stroke-steps-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.stroke-step-item {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  padding-left: 4px;
+}
+
+.stroke-tips-note {
+  font-size: 12px;
+  color: var(--accent-gold);
+  font-style: italic;
+  padding-top: 4px;
+  border-top: 1px dashed var(--border-subtle);
+}
+
+/* Font Style Selector Toggle */
+.font-toggle-pill {
+  display: flex;
+  align-items: center;
+  background: var(--bg-surface);
+  padding: 2px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  font-size: 11px;
+}
+
+.font-option-btn {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.font-option-btn.active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .typing-prompt {
